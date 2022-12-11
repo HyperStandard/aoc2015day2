@@ -6,51 +6,52 @@ fn main() {
 
     let path = get_arguments(&args);
 
-    let mut content = String::new();
+    let mut content: String = String::new();
 
-    if path != None {
+    if path.is_some() {
         let file_path = path.unwrap();
         println!("Using supplied file: {}", &file_path);
         content = fs::read_to_string(file_path)
             .expect("Error, unable to read file. Deleting your vacation pictures.");
-        //len = content.chars().count()
     } else {
-        print!("Enter \"map\": ");
-        //len = std::io::stdin().read_line(&mut content).unwrap();
-    }
-    let mut height: u64 = 0;
-    let mut width: u64 = 0;
-    let mut length: u64 = 0;
-    let mut total_paper: u64 = 0;
-    //TODO remember how linebreaks work on every OS
-    for (i, dimensions) in content.split("\r\n").enumerate() {
-        println!("lindy: [{}] dimensions = {}", i, dimensions);
-        for (j, mut char) in dimensions.split("x").enumerate() {
-            //char.remove_matches((|x| x.is_whitespace()));
-            String::remove_matches(mut char, (|x| x.is_whitespace()));
-            dbg!(char);
-            match j {
-                0 => height = char.parse().unwrap(),
-                1 => width = char.parse().unwrap(),
-                2 => length = char.parse().unwrap(),
-                _ => println!("what did you DO"),
-            }
-            total_paper += 2 * length * width + 2 * width * height + 2 * height * length;
-            total_paper += smallest_of(vec![height, width, length]);
-        }
+        //todo!("write this code for stdin")
     }
 
-    println!("The elves need {} feet of paper", total_paper);
+    let mut total_paper: u64 = 0;
+    for dimensions in content.split('\n') {
+        total_paper += line_amount(String::from(dimensions));
+    }
+
+    println!("The elves need {total_paper} feet of paper");
 }
 
 fn get_arguments(args: &Vec<String>) -> Option<String> {
     let pos = args.iter().position(|x| x == "-f" || x == "--file");
-    if pos != None {
-        let path = Some(args[pos.unwrap() + 1].clone());
-        return path;
+    if pos.is_some() {
+        Some(args[pos.unwrap() + 1].clone())
     } else {
-        return None;
+        None
     }
+}
+
+fn line_amount(input: String) -> u64 {
+    let mut lwh: Vec<u64> = vec![0, 0, 0];
+    let mut dims: String = input;
+
+    //for some reason there's like a spare linebreak somwhere in here so i may as well put this here
+    //to keep the demons at bay in future
+    dims.remove_matches(|x: char| x.is_whitespace());
+
+    //split "nnnxnnnxnnn" into a vector of 3 u32s", ignore everything else just as a side effect
+    for (index, dim) in dims.split('x').enumerate() {
+        if index < 3 {
+            lwh[index] = dim.parse().unwrap_or(0)
+        }
+    }
+    let sides = (lwh[0] * lwh[1], lwh[1] * lwh[2], lwh[2] * lwh[0]);
+
+    //this is probably the formula for area of all sides + the spare bits
+    (2 * sides.0) + 2 * sides.1 + 2 * sides.2 + smallest_of(vec![sides.0, sides.1, sides.2])
 }
 
 fn smallest_of(input: Vec<u64>) -> u64 {
@@ -63,5 +64,5 @@ fn smallest_of(input: Vec<u64>) -> u64 {
             baby = number;
         }
     }
-    return baby;
+    baby
 }
